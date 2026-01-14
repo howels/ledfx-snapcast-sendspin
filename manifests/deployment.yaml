@@ -1,0 +1,54 @@
+# Save the output of this file and use kubectl create -f to import
+# it into Kubernetes.
+#
+# Created with podman-5.4.1
+
+# NOTE: If you generated this yaml from an unprivileged and rootless podman container on an SELinux
+# enabled system, check the podman generate kube man page for steps to follow to ensure that your pod/container
+# has the right permissions to access the volumes added.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ledfx-snapcast-deployment
+  namespace: ledfx
+  labels:
+    app: ledfx-snapcast
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ledfx-snapcast
+  template:
+    metadata:
+      labels:
+        app: ledfx-snapcast
+    spec:
+      hostname: ledfx-snapcast
+      containers:
+        - env:
+          - name: HOST
+            value: 192.168.x.x
+          - name: FORMAT
+            value: -r 44100 -f S16_LE -c 2
+          - name: LEDFX_OPTS
+            value: -v
+          image: localhost/ledfx-snapcast:v2.0.110
+          imagePullPolicy: Never
+          name: ledfx-snapcast
+          ports:
+          - containerPort: 8888
+            hostPort: 8888
+          volumeMounts:
+          - mountPath: /app/ledfx-config
+            name: ledfx-config
+          - mountPath: /app/audio
+            name: audio-host-1
+      volumes:
+      - name: ledfx-config
+        persistentVolumeClaim:
+          claimName: ledfx
+      - emptyDir:
+          medium: Memory
+          sizeLimit: 64Mi
+        name: audio-host-1
